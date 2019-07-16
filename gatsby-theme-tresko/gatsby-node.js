@@ -45,3 +45,40 @@ exports.createResolvers = ({ createResolvers }) => {
 }
 
 // 4. query events and create pages
+exports.createPages = async ({ actions, graphql, reporter }) => {
+  const basePath = '/'
+  actions.createPage({
+    path: basePath,
+    component: require.resolve('./src/templates/posts.js')
+  })
+
+  const result = await graphql(`
+    query {
+      allTreskoBlog(sort: {fields: id, order: DESC}) {
+        nodes {
+          name
+          url
+          slug
+        }
+      }
+    }
+  `)
+
+  if (result.errors) {
+    reporter.panic('error loading posts', reporter.errors)
+  }
+
+  const posts = result.data.allTreskoBlog.nodes
+
+  posts.forEach(post => {
+    const slug = post.slug
+
+    actions.createPage({
+      path: slug,
+      component: require.resolve('./src/templates/post.js'),
+      context: {
+        eventID: post.id,
+      }
+    })
+  })
+}
